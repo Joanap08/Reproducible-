@@ -1,0 +1,287 @@
+---
+title: "Storm Joana - Assignment 2"
+author: "Joana Pinto"
+date: "6 January 2017"
+output: html_document
+keep_md: yes
+---
+##Title: How do weather events impact the economy and health in USA habitants?
+
+#####Synopsis: The all point of this study is to assess the impact of different weather events in areas such as health and economics in USA. We will focus our first stage at processing the data by filter the 10 most impact events in both this areas and then presenting our discoveries in the section Results using ggplot2 tool to enhance our findings.Due to my narrow determination to to tidy the data set as much as possible, my results proved that Tornados are the deadliest event accross the USA without any doubts. Regarding the properties damages we have seen that floods have a major impact in property damages, whilst crop related we once more seen the tremendous impact of Tornadoes, followed by drought events.
+
+######Packages:
+```{r,cache=TRUE}
+if (!require("ggplot2")) { install.packages("ggplot2"); library(ggplot2) }
+if (!require("dplyr")) { install.packages("dplyr"); library(dplyr) }
+if (!require("stringr")) { install.packages("stringr"); library(stringr) }
+```
+
+#####Extracting the raw data
+```{r, cache=TRUE}
+if (!file.exists("storm")){
+  dir.create("storm")
+}
+fileurl<-"https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+download.file(fileurl,destfile = "storm.csv",method = "auto")
+storm1<-read.table("storm.csv",header = TRUE,sep = ",")
+```
+
+### Data Processing (Tidy Data)
+
+1.Reduce the number of columns for what is indeed necessary
+
+```{r,cache=TRUE}
+storm1<-storm1[,c("EVTYPE","FATALITIES","INJURIES","PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP")]
+```
+
+2.The dataset has a lot of typo errors in the EVTYPE events and needed to be corrected in some levels.
+
+```{r,cache=TRUE}
+#Thunderstorm Winds
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"\\<TSTM|^TSTM WIND$|^Tstm$|^THUNDERSTORM WINDS WIND$|^THUNDERTORM WINDS$|^THUNDERSTROM WINDS$|^THUNDERSTORMS WINDS$|^THUNDERSTORM WINDSS$|^THUNDERSTORM WINDSHAIL$|^THUNDERSTORM WINDS/HEAVY RAIN$|^THUNDERSTORM WINDS/HAIL$|^THUNDERSTORM WINDS HEAVY RAIN$|^THUNDERSTORM WINDS WIND/HAIL$|^THUNDERSTORM WINDS HAIL$|^THUNDERSTORM WIND/HAIL$|^THUNDERSTORM WINDS/ HAIL$|^THUNDERSTORM HAIL$|^THUNDERSTORM WINDS WIND (G45)$|^THUNDERSTORM WINDS WIND$|^THUNDERSTORM WIND$","THUNDERSTORM WINDS")
+
+#Marine Thunderstorm winds
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^MARINE THUNDERSTORM WINDS WIND$|^MARINE THUNDERSTORM WIND$","MARINE THUNDERSTORM WINDS")
+
+#Winter Storm
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^WINTER STORM$|^WINTER STORM/HIGH WINDS$|^WINTER STORM HIGH WINDS$|^WINTER STORM/HIGH WIND$|^HEAVY SNOW/WINTER STORM$|^BLIZZARD/WINTER STORM$|^WINTER STORMS$","WINTER STORM")
+
+#Wildfires
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^WILDFIRE$|^WILDFIRES$|^WILD/FOREST FIRE$|^WILD FIRES$|^WILD/FOREST FIRES","WILDFIRES")
+
+#Volcanic ash
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^VOLCANIC ASH$|^VOLCANIC ASHFALL$|^VOLCANIC ERUPTION$|^Volcanic Ash Plume$|^Volcanic Ash$","VOLCANIC ASH")
+
+#Tropical Storm
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^TROPICAL STORM ALBERTO$|^TROPICAL STORM DEAN$|^TROPICAL STORM GORDON$|^TROPICAL STORM JERRY$","TROPICAL STORM")
+
+#High Surf
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^HIGH SURF ADVISORIES$|^HEAVY SURF/HIGH SURF$|^Heavy Rain/High Surf$|^High Surf$|\\<HIGH SURF ADVISORY\\>","HIGH SURF")
+
+#Heavy snow
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^BLIZZARD AND HEAVY SNOW$|^BLIZZARD/HEAVY SNOW$|^HEAVY SNOW-SQUALLS$|\\<HEAVY SNOW FREEZING RAIN\\>|^HEAVY SNOW & ICE$|^HEAVY SNOW AND$|^HEAVY SNOW AND HIGH WINDS$|^HEAVY SNOW AND ICE$|^ HEAVY SNOW AND ICE STORM$|^HEAVY SNOW AND STRONG WINDS$|^HEAVY SNOW ANDBLOWING SNOW$|^HEAVY SNOW SQUALLS$|^Heavy snow shower$|^HEAVY SNOW/BLIZZARD$|^HEAVY SNOW/BLIZZARD/AVALANCHE$|^HEAVY SNOW/BLOWING SNOW$|^HEAVY SNOW/FREEZING RAIN$|^HEAVY SNOW/HIGH$|^HEAVY SNOW/HIGH WINDS$|^HEAVY SNOW/HIGH WINDS & FLOOD$|^HEAVY SNOW/HIGH WINDS/FREEZING$|^HEAVY SNOW/ICE$|^HEAVY SNOW/ICE STORM$|^HEAVY SNOW/SLEET$|^HEAVY SNOW/SQUALLS$|^HEAVY SNOW/WIND$|^HEAVY SNOWPACK$|^HIGH WIND AND HEAVY SNOW$|^HIGH WIND/HEAVY SNOW$|^SNOW AND HEAVY SNOW$|^SNOW/HEAVY SNOW$|^HEAVY SNOW FREEZING RAIN$|^HEAVY SNOW AND ICE STORM$|\\<HEAVY SNOW/HIGH WIND//>","HEAVY SNOW")
+
+#Heavy rain
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^HEAVY RAINS$|^HEAVY RAINS/FLOODING$|^HIGH WINDS/HEAVY RAIN$|^HIGH WINDS HEAVY RAINS$|^LIGHTNING AND HEAVY RAIN$|^LIGHTNING/HEAVY RAIN$|^LOCALLY HEAVY RAIN$|\\<Heavy Rain//>|^FLOODING/HEAVY RAIN$|^FLOOD & HEAVY RAIN$|^Heavy rain$|^HEAVY RAINFALL$|^HEAVY RAIN; URBAN FLOOD WINDS;$|^HEAVY RAIN/WIND$|^HEAVY RAIN/URBAN FLOOD$|^HEAVY RAIN/SNOW$|^HEAVY RAIN/SMALL STREAM URBAN$|^HEAVY RAIN/SEVERE WEATHER$|^HEAVY RAIN/MUDSLIDES/FLOOD$|^HEAVY RAIN/LIGHTNING$|^HEAVY RAIN/FLOODING$|^HEAVY RAIN EFFECTS$|^Heavy Rain and Wind$|^HEAVY RAIN AND FLOOD$","HEAVY RAIN")
+
+#Excessive Heat
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^RECORD/EXCESSIVE HEAT$|^EXCESSIVE HEAT/DROUGHT$|^DROUGHT/EXCESSIVE HEAT$","EXCESSIVE HEAT")
+
+#Heat
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^HEAT WAVE$|^HEAT WAVE DROUGHT$|^HEAT WAVES$|^HEAT/DROUGHT$|^Heatburst$|^Record Heat$|^RECORD HEAT$|^RECORD HEAT WAVE$|^Heat Wave$|^HEAT DROUGHT$","HEAT")
+
+#Tornado
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^WATERSPOUT/TORNADO$|^WATERSPOUT/ TORNADO$|^WATERSPOUT TORNADO$|^WATERSPOUT-TORNADO$|^TORNADOS$|^TORNADOES, THUNDERSTORM WINDS WIND, HAIL$|^TORNADOES$|^TORNADO/WATERSPOUT$|^TORNADO F3$|^TORNADO F2$|^TORNADO F1$|^TORNADO F0$|^TORNADO DEBRIS$","TORNADO")
+
+#Hail
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^SMALL HAIL$|^WIND/HAIL$|^GUSTY WIND/HAIL$|^FUNNEL CLOUD/HAIL$|^DEEP HAIL$|^Small Hail$|^small hail$|^NON SEVERE HAIL$","HAIL")
+
+#Gustnado
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^GUSTNADO AND$","GUSTNADO")
+
+#Funnel Cloud
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^WATERSPOUT FUNNEL CLOUD$|^WALL CLOUD/FUNNEL CLOUD$|^FUNNEL CLOUDS$|^Funnel Cloud$","FUNNEL CLOUD")
+
+#Frost/Freeze
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^Cold and Frost$|^COLD AND FROST$|^Early Frost$|^EARLY FROST$|^FIRST FROST$|^Frost$|^FROST$|^Frost/Freeze$|^RECORD COLD/FROST$","FROST/FREEZE")
+
+#Strong winds
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^Flood/Strong Wind$|^ICE/STRONG WINDS$|^STRONG WINDS$|^Strong Winds$|^STRONG WIND GUST$|^Strong winds$","STRONG WIND")
+
+#Freezing fog
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^ICE FOG$|^Ice Fog$","FREEZING FOG")
+
+#Dense Fog
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^PATCHY DENSE FOG$","DENSE FOG")
+
+#Coastal Flood
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^Coastal Flood$|^COASTAL FLOODING/EROSION$|^BEACH FLOOD$|^BEACH EROSION/COASTAL FLOOD$|^COASTAL FLOODING$|^HEAVY SURF COASTAL FLOODING$|^HIGH WINDS/COASTAL FLOOD$|^Coastal Flooding$|^Coastal Flood$|^coastal flooding$","COASTAL FLOOD")
+
+#Flash Flood
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^THUNDERSTORM WINDS/FLASH FLOOD$|^LOCAL FLASH FLOOD$|^FLOOD/FLASH FLOODING$|^FLOOD/FLASH FLOOD$|^FLASH FLOODS$|^ICE STORM/FLASH FLOOD$|^Flood/Flash Flood$|^FLASH FLOODING/FLOOD$|^FLASH FLOODING/THUNDERSTORM WI$|^FLASH FLOODING$|^FLASH FLOOD/FLOOD$|^FLASH FLOOD/LANDSLIDE$|^FLASH FLOOD/HEAVY RAIN$|^FLASH FLOOD/ STREET$|^FLASH FLOOD/ FLOOD$|^FLASH FLOOD/$|^FLASH FLOOD WINDS$|^FLASH FLOOD LANDSLIDES$|^FLASH FLOOD FROM ICE JAMS$|^FLASH FLOOD - HEAVY RAIN$","FLASH FLOOD")
+
+#Flood
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^URBAN/STREET FLOODING$|^URBAN/SMALL STREAM FLOODING$|^URBAN/SMALL STREAM FLOOD$|^URBAN/SMALL FLOODING$|^URBAN SMALL STREAM FLOOD$|^URBAN FLOODS$|^URBAN FLOODING$|^Urban Flooding$|^URBAN FLOOD LANDSLIDE$|^URBAN FLOOD$|^Urban Flood$|^Urban flood$|^URBAN AND SMALL STREAM FLOODIN$|^URBAN AND SMALL STREAM FLOOD$|^TIDAL FLOODING$|^Tidal Flooding$|^TIDAL FLOOD$|^THUNDERSTORM WINDS/FLOODING$|^THUNDERSTORM WINDS/ FLOOD$|^THUNDERSTORM WINDS URBAN FLOOD$|^STREET FLOODING$|^STREET FLOOD$|^STREAM FLOODING$|^SNOWMELT FLOODING$|^SMALL STREAM/URBAN FLOOD$|^SMALL STREAM FLOODING$|^SMALL STREAM FLOOD$|^SMALL STREAM AND URBAN FLOODIN$|^SMALL STREAM AND URBAN FLOOD$|^RURAL FLOOD$|^RIVER FLOODING$|^River Flooding$|^RIVER FLOOD$|^RIVER AND STREAM FLOOD$|^MUD SLIDES URBAN FLOODING$|^MINOR FLOODING$|^Minor Flooding$|^MINOR FLOOD$|^MAJOR FLOOD$|^LOCAL FLOOD$|^LANDSLIDE/URBAN FLOOD$|^LAKESHORE FLOOD$|^FLOODING$|^ICE JAM FLOODING$|^HAIL FLOODING$|^ICE JAM FLOODING$|^FLOODS$|^Ice jam flood \\(minor$|^HIGHWAY FLOODING$|^HIGH WINDS/FLOODING$|^HAIL FLOODING$|^LAKE FLOOD$|^FLOOD/RIVER FLOOD$|^FLOOD/RAIN/WINDS$|^FLOOD/FLASHFLOOD$|^FLOOD/FLASH/FLOOD$|^FLOOD/FLASH$|^FLOOD WATCH/$|^FLOOD FLOOD/FLASH$|^FLOOD FLASH$|^FLOOD/RAIN/WIND$|^SMALL STREAM URBAN FLOOD$|^URBAN/SMALL STREAM FLOOD$","FLOOD")
+
+#Extreme Cold
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^Extreme Cold$|^BLOWING SNOW/EXTREME WIND CHIL$|^BLOWING SNOW & EXTREME WIND CH$|^BLOWING SNOW- EXTREME WIND CHI$|^BLIZZARD AND EXTREME WIND CHIL$|^BLIZZARD AND EXTREME WIND CHIL$|^EXTREME COLD/WIND CHILL$|^EXTREME WINDCHILL$|^EXTREME WINDCHILL TEMPERATURES$|^EXTREME WIND CHILL$|^EXTREME WIND CHILL/BLOWING SNO$|^EXTREME WIND CHILLS$","EXTREME COLD")
+
+#Storm Tide
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^STORM SURGE/TIDE$|^BLOW-OUT TIDES$|^BLOW-OUT TIDE$|^HIGH WIND AND HIGH TIDES$|^HIGH WIND AND HIGH TIDES$|^Coastal Storm$|^ COASTAL STORM","STORM TIDE")
+
+#sLEET
+
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^LIGHT SNOW AND SLEET$|^FREEZING RAIN AND SLEET$|^SLEET/RAIN/SNOW$|^SNOW/RAIN/SLEET$|^SNOW/SLEET/FREEZING RAIN$|^SLEET/ICE STORM$|^FREEZING RAIN/SLEET$|^FREEZING RAIN AND SLEET$|^SNOW/SLEET$|^Snow and sleet$|^SLEET/SNOW$|^SLEET & FREEZING RAIN$|^SLEET STORM$|^FREEZING RAIN SLEET AND LIGHT$|^FREEZING RAIN SLEET AND$","SLEET")
+
+#Dust DEVIL
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^Dust Devil$|^DUST DEVEL$","DUST DEVIL")
+
+#DUST STORM
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^DUST STORM/HIGH WINDS$|^HIGH WINDS DUST STORM$","DUST STORM")
+
+#Rip current
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^RIP CURRENTS$|^RIP CURRENTS/HEAVY SURF$|^RIP CURRENTS HEAVY SURF$","RIP CURRENT")
+
+#High winds
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^HIGH WINDS 55$|^HIGH WINDS 57$|^HIGH WINDS 58$|^HIGH WINDS 63$|^HIGH WINDS 66$|^HIGH WINDS 67$|^HIGH WINDS 73$|^HIGH WINDS 73$|^HIGH WINDS 76$|^HIGH WINDS 80$|^HIGH WINDS 82$|^HIGH WINDS AND WIND CHILL$|^HIGH WINDS DUST STORM$|^HIGH WINDS/$|^HIGH WINDS/COLD$|^HIGH WINDS/SNOW$|^HURRICANE OPAL/HIGH WINDS$|^SNOW/HIGH WINDS$","HIGH WINDS")
+
+#Ice storm
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^GLAZE/ICE STORM$|^ICE STORM AND SNOW$|^SNOW AND ICE STORM$|^SNOW/ICE STORM","ICE STORM")
+
+#WINTER WEATHER
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^WINTER WEATHER/MIX$|^Winter Weather$|^WINTERY MIX$|^WINTRY MIX$","WINTER WEATHER")
+
+#Blizzard
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^Icestorm/Blizzard$|^HIGH WIND/WIND CHILL/BLIZZARD$|^HIGH WIND/BLIZZARD/FREEZING RA$|^HIGH WIND/BLIZZARD$|^GROUND BLIZZARD$|^BLIZZARD/HIGH WIND$|^HIGH WIND/BLIZZARD$|^HIGH WIND/ BLIZZARD$|^GROUND BLIZZARD$|^BLIZZARD/HIGH WIND$^BLIZZARD/FREEZING RAIN$|^BLIZZARD WEATHER$","BLIZZARD")
+
+#Hurricane/Typhoon
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^HURRICANE$|^HURRICANE OPAL/HIGH WINDS$|^HURRICANE OPAL$|^HURRICANE GORDON$|^HURRICANE FELIX$|^HURRICANE ERIN$|^HURRICANE EMILY$|^Hurricane Edouard$|^HURRICANE-GENERATED SWELLS$","HURRICANE/TYPHOON")
+
+#COLD/WIND CHILL
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^COLD WIND CHILL TEMPERATURES$|^COLD WEATHER$|^COLD WAVE$|^COLD TEMPERATURES$|^Cold Temperature$|^COLD AND WET CONDITIONS$|^COLD AND SNOW$|^COLD AND FROST$|^Cold and Frost$|^COLD AIR TORNADO$|^COLD AIR FUNNELS$|^COLD AIR FUNNEL$|^COLD$|^Cold$|^UNUSUALLY COLD$|^UNSEASONABLY COLD$|^Unseasonable Cold$|^SNOW/COLD$|^SNOW/ BITTER COLD$|^SNOW AND COLD$|^SEVERE COLD$|^RECORD SNOW/COLD$|^RECORD COLD/FROST$|^RECORD COLD AND HIGH WIND$|^RECORD COLD$|^Record Cold$|^PROLONG COLD/SNOW$|^PROLONG COLD$|^Prolong Cold$|^HIGH WINDS/COLD$|^FOG AND COLD TEMPERATURES$|^EXTREME/RECORD COLD$|^EXTREME COLD$","COLD/WIND CHILL")
+
+#Lightning
+storm1$EVTYPE<-str_replace_all(storm1$EVTYPE,"^TSTM WIND AND LIGHTNING$|^THUNDERSTORM WINDS LIGHTNING$|^THUNDERSTORM WIND/LIGHTNING$|^LIGHTNING[.]$|^LIGHTNING THUNDERSTORM WINDS$|^LIGHTNING THUNDERSTORM WINDSS$|^LIGHTNING INJURY$|^LIGHTNING FIRE$|^LIGHTNING DAMAGE$|^LIGHTNING AND WINDS$|^LIGHTNING AND THUNDERSTORM WIN$|^LIGHTNING WAUSEON$","LIGHTNING")
+
+```
+
+### Data processing of the Crop and Properties Damages
+
+1. Property Damages (to be more precise at estimating the damages was necessary to change the conotation "K","M",etc. given to PROPDGMEXP so the losses could be indeed accountable)
+```{r,cache=TRUE}
+unique(storm1$PROPDMGEXP)
+storm1$PROPEXP[storm1$PROPDMGEXP ==  "K"   ]  <-    1000
+storm1$PROPEXP[storm1$PROPDMGEXP == "M"     ]   <-  10^6
+storm1$PROPEXP[storm1$PROPDMGEXP == ""      ]   <-  1
+storm1$PROPEXP[storm1$PROPDMGEXP == "B"     ]   <-  10^9
+storm1$PROPEXP[storm1$PROPDMGEXP == "m"     ]   <-  10^6
+storm1$PROPEXP[storm1$PROPDMGEXP == "+"     ]   <-  0
+storm1$PROPEXP[storm1$PROPDMGEXP == "0"     ]   <-  1
+storm1$PROPEXP[storm1$PROPDMGEXP == "5"     ]   <-  10^5
+storm1$PROPEXP[storm1$PROPDMGEXP == "6"     ]   <-  10^6
+storm1$PROPEXP[storm1$PROPDMGEXP == "?"     ]   <-  0
+storm1$PROPEXP[storm1$PROPDMGEXP == "4"     ]   <-  10000
+storm1$PROPEXP[storm1$PROPDMGEXP == "2"     ]   <-  100
+storm1$PROPEXP[storm1$PROPDMGEXP == "3"     ]   <-  1000
+storm1$PROPEXP[storm1$PROPDMGEXP == "h"     ]   <-  100
+storm1$PROPEXP[storm1$PROPDMGEXP == "7"     ]   <-  10^7
+storm1$PROPEXP[storm1$PROPDMGEXP == "H"     ]   <-  100
+storm1$PROPEXP[storm1$PROPDMGEXP == "-"     ]   <-  0
+storm1$PROPEXP[storm1$PROPDMGEXP == "1"     ]   <-  10
+storm1$PROPEXP[storm1$PROPDMGEXP == "8"     ]   <-  10^8
+
+storm1$PROPDMGF <- storm1$PROPDMG * storm1$PROPEXP
+```
+
+2. Crop Damages
+```{r,cache=TRUE}
+storm1$CROPEXP[storm1$CROPDMGEXP ==  ""     ]   <-  1
+storm1$CROPEXP[storm1$CROPDMGEXP == "M"     ]   <-  10^6
+storm1$CROPEXP[storm1$CROPDMGEXP == "K"     ]   <-  1000
+storm1$CROPEXP[storm1$CROPDMGEXP == "m"     ]   <-  10^9
+storm1$CROPEXP[storm1$CROPDMGEXP == "B"     ]   <-  10^6
+storm1$CROPEXP[storm1$CROPDMGEXP == "?"     ]   <-  0
+storm1$CROPEXP[storm1$CROPDMGEXP == "0"     ]   <-  1
+storm1$CROPEXP[storm1$CROPDMGEXP == "k"     ]   <-  1000
+storm1$CROPEXP[storm1$CROPDMGEXP == "2" ]   <-  100
+
+storm1$CROPDMGF <- storm1$CROPDMG * storm1$CROPEXP
+```
+
+##RESULTS
+
+#### Action Plan
+1. We will use agreggate so we can sum all the losses per event type, by either fatality,injury,crop damage or property.
+
+2. The command rep it will be used to create a 636 (this number is inferior to 985 because I have tidy the dataset) character vectors named "Properties","Crops","Fatalities","Injuries" respectively to be used later for panel plot
+
+3. We will then select top 10 more impacting events either regarding fatalities/injuries, or crop damages/property damages.
+
+
+###Question 1
+
+####Calculating the total number of fatalities/injuries of different events impact accross the USA
+```{r, cache=TRUE}
+stormfatal<-aggregate(storm1$FATALITIES, by=list(storm1$EVTYPE),sum, na.rm=TRUE)
+fatal<-rep(c("FATALITIES"),times=636)
+stormfatal<-cbind(stormfatal,fatal)
+colnames(stormfatal)<-c("EVTYPE","CASES","HEALTH")
+stormfatalMAX<-stormfatal[order(stormfatal$CASES,decreasing=TRUE)[1:10],] 
+
+storminj<-aggregate(storm1$INJURIES, by=list(storm1$EVTYPE),sum,na.rm=TRUE )
+inju<-rep(c("INJURIES"),times=636)
+storminj<-cbind(storminj,inju)
+colnames(storminj)<-c("EVTYPE","CASES","HEALTH")
+
+storminjMAX<-storminj[order(storminj$CASES,decreasing=TRUE)[1:10],] 
+
+health<-rbind(stormfatalMAX,storminjMAX)
+levels(health$EVTYPE) <- tolower(levels(health$EVTYPE))
+```
+###Question 2
+
+####Calculating the economic impact of weather events impact accross the USA based on properties and crop damages.
+```{r,cache=TRUE}
+propdmg<-aggregate(storm1$PROPDMGF, by=list(storm1$EVTYPE),sum, na.rm=TRUE)
+property<-rep(c("Properties"),times=636)
+propdmg<-cbind(propdmg,property)
+colnames(propdmg)<-c("EVTYPE","CASES","DAMAGE")
+propdmgMAX<-propdmg[order(propdmg$CASES,decreasing=TRUE)[1:10],] 
+
+cropdmg<-aggregate(storm1$CROPDMGF, by=list(storm1$EVTYPE),sum,na.rm=TRUE )
+crop<-rep(c("Crops"),times=636)
+cropdmg<-cbind(cropdmg,crop)
+colnames(cropdmg)<-c("EVTYPE","CASES","DAMAGE")
+cropdmgMAX<-cropdmg[order(cropdmg$CASES,decreasing=TRUE)[1:10],] 
+
+econom<-rbind(propdmgMAX,cropdmgMAX)
+levels(econom$EVTYPE) <- tolower(levels(econom$EVTYPE))
+econom$CASES<-round(econom$CASES,digits = 0)
+
+```
+
+## Graphical Visualization
+
+###Question 1
+
+#### Figure of weather events impact in Health in USA
+```{r, cache=TRUE,fig.width=10, fig.height=7}
+h<-ggplot(health, aes(x = EVTYPE, y = CASES,label=CASES)) +
+  theme_grey()+ 
+  geom_bar(aes(fill=EVTYPE),stat = "identity")+ facet_grid(HEALTH~., scales="free")+
+  geom_text(colour = "black", fontface = "italic", size= 3,hjust= 0.5,vjust=-0.25,angle=0)+
+  theme(axis.text.x=element_text(angle=90, size=10, vjust=0.5))+
+  theme(legend.title = element_blank())+
+  theme(axis.ticks.y = element_blank(),axis.text.y = element_blank())+
+  xlab("Event Types")+
+  ylab("Count (units)")+
+  ggtitle("The top-10 events most harmful to population health in USA")+
+  theme(plot.title = element_text(size = 15,lineheight = 0.3,vjust=0.5))+
+  coord_cartesian(ylim = c(0,95000))
+print(h)
+```
+
+###Question 2
+#### Figure of weather events impact in Economy in USA
+```{r,cache=TRUE,fig.width=10, fig.height=7}
+g<-ggplot(econom, aes(x = EVTYPE, y = CASES,label=round(CASES,0))) +
+  theme_grey()+ 
+  geom_bar(aes(fill=EVTYPE),stat = "identity")+ facet_grid(DAMAGE~.,scales = "free")+
+  theme(axis.text.x=element_text(angle=90, size=10, vjust=0.5))+
+    geom_text(colour = "black", fontface = "italic", size= 2,hjust= 0.5,vjust=-0.25,angle=0)+
+  theme(legend.title = element_blank())+
+  theme(axis.ticks.y = element_blank(),axis.text.y = element_blank())+
+  xlab("Event Types")+
+  ylab("Economical Losses (USD)")+
+  ggtitle("The top-10 of events with greatest economic consequences in USA")+
+  theme(plot.title = element_text(size = 15,lineheight = 0.3,vjust=0.5))
+print(g)
+```
+
+Results:
+
+1.The most impacting weather event in Health accross the USA is Tornado, with highest number of cases either injuries or fatalities.
+
+2.The most impacting weather event in Economy accross the USA, regarding properties is, Flood. Crops-related we can see that the Hurricane/Typhoon as the most devastating weather event.
+
+#####End of analysis
