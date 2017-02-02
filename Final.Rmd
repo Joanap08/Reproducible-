@@ -260,7 +260,8 @@ h<-ggplot(health, aes(x = EVTYPE, y = CASES,label=CASES)) +
   coord_cartesian(ylim = c(0,95000))
 print(h)
 ```
-![Image 1](Reproducible-/Final_files/figure-html/unnamed-chunk-9-1.png)
+![Image 1](https://github.com/Joanap08/Reproducible-/blob/master/Final_files/figure-html/unnamed-chunk-9-1.png)
+
 ###Question 2
 #### Figure of weather events impact in Economy in USA
 ```{r,cache=TRUE,fig.width=10, fig.height=7}
@@ -277,7 +278,8 @@ g<-ggplot(econom, aes(x = EVTYPE, y = CASES,label=round(CASES,0))) +
   theme(plot.title = element_text(size = 15,lineheight = 0.3,vjust=0.5))
 print(g)
 ```
-![Image 2](Reproducible-/Final_files/figure-html/unnamed-chunk-10-1.png)
+![Image 2](https://github.com/Joanap08/Reproducible-/blob/master/Final_files/figure-html/unnamed-chunk-10-1.png)
+
 Results:
 
 1.The most impacting weather event in Health accross the USA is Tornado, with highest number of cases either injuries or fatalities.
